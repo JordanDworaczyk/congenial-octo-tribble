@@ -23,5 +23,5 @@ def variable_projection(t,y,lambda1,d,maxits,beta,x_guess, x_true,y_true,tol):
 def compute_jacobian(y, x, t):
     pass 
 
-def myfminVarPro(alpha,x,a, dela, L, lambda,d, t):
+def myfminVarPro(alpha,x,a, dela, L, lambda1,d, t):
     pass 
