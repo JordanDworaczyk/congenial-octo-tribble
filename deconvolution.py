@@ -1,4 +1,5 @@
 from functools import partial
+from copy import copy 
 
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -55,18 +56,16 @@ class MixtureDistribution():
         self.parameters = mixture_component_parameters 
         self.components = [partial(component, domain) for component in mixture_components]
         self.component_derivatives = [partial(derivative, domain) for derivative in mixture_component_derivatives]
+        self.history = [copy(self)]
     
     @property
     def array(self): 
-        return self.weights @ self.components_array
-
-    def normalized_component_array(self, component, parameter): 
-        return component(*parameter) / sum(component(*parameter))
+        return self.weights @ self.components_array        
     
     @property
     def components_array(self): 
         return np.array(
-            [self.normalized_component_array(component, parameter) for parameter, component in zip(self.parameters, self.components)]
+            [component(parameter) for parameter, component in zip(self.parameters, self.components)]
         )
 
     @property
@@ -81,20 +80,40 @@ class MixtureDistribution():
         result = []
         for weight in self.weights:
             for component, component_derivative, parameter in zip(self.components, self.component_derivatives, self.parameters):
-                component = component(*parameter)
-                component_derivative = component_derivative(*parameter)
-                sum_component = sum(component)
+                component = component(parameter)
+                component_derivative = component_derivative(parameter)
+                normalization_constant = sum(component)
                 sum_derivative = sum(component_derivative)
                 result.append(
-                    weight * (component_derivative / sum_component - (component * sum_derivative / (sum_component ** 2)))
+                    weight * (component_derivative - (component * sum_derivative / normalization_constant ))
                 )
         return result 
 
     @property
-    def partial_derivative_wrt_weights(self): 
-        return [self.normalized_component_array(component, parameter) for parameter, component in zip(self.parameters, self.components)]
+    def ravel(self): 
+        return np.hstack((self.weights, self.parameters.flatten()))
 
-    def visualize_mixture(self): 
+    def flatten(self):
+        return 
+
+    @property
+    def partial_derivative_wrt_weights(self): 
+        return [component(parameter) for parameter, component in zip(self.parameters, self.components)]
+
+    @property 
+    def partial_derivatives(self):
+        return self.partial_derivative_wrt_weights + self.partial_derivative_wrt_parameters
+
+    def update(self, weights, parameters):
+        self.weights = weights 
+        self.parameters = parameters.reshape(self.parameters.shape) 
+
+    def log(self):
+        self.history.append(
+            copy(self)
+        )
+
+    def visualize_mixture(self, title): 
         fig, ax = plt.subplots()
         ax.plot(self.domain, self.array, 'k', label='Mixture Distribution')
         for weight, component_array, component in zip(self.weights, self.components_array, self.components):
@@ -102,6 +121,7 @@ class MixtureDistribution():
         ax.set_xlabel('Pixels')
         ax.set_ylabel('Density')
         ax.legend(fontsize=8)
+        plt.title(title)
     
     def __repr__(self) -> str:
         return f'''MixtureDistribution(
@@ -156,26 +176,31 @@ def variable_projection_total_variation(
         jacobian,
         regularization_parameter,
         regularization_matrix,
-        max_iterations, 
-        tolerance
+        max_iterations
     ): 
     L = regularization_matrix(initial_signal)
     mixture_model = initial_mixture_model
+    kernel_partial_derivatives = mixture_model.partial_derivatives
 
-    y = np.hstack((mixture_model.weights, mixture_model.parameters.flatten()))
+
+    y = mixture_model.ravel
     for _ in range(max_iterations): 
+        # update blurring operator
         kernel = mixture_model.array
-        kernel_partial_derivatives = mixture_model.partial_derivative_wrt_weights + mixture_model.partial_derivative_wrt_parameters
         K = BlurringOperator(kernel, blur_structure)
 
+        # reduce full functional
         KL = np.block([[K.matrix], [regularization_parameter * L]])
         bigd = np.block([data, np.zeros_like(data)])
         signal = pinv(KL) @ bigd
 
+        # update jacobian
         J = jacobian(signal, kernel_partial_derivatives, blur_structure)
+        
         # Gauss-Newton method for least squares 
         residual = data - K @ signal
         delta_y = pinv(J) @ residual
+        
         # line search strategy
         full_functional = partial(objective_function, signal=signal, data=data, regularization_parameter=regularization_parameter, regularization_matrix=L)
         search = partial(line_search, function=full_functional, delta_y=delta_y, mixture_model=mixture_model, blurring_operator=K)
@@ -183,6 +208,7 @@ def variable_projection_total_variation(
         alpha = fminbound(search, 0, 1)
         y = y + alpha * delta_y
 
+        # reshape
         weights = y[0:mixture_model.weights.size]
         parameters = y[mixture_model.weights.size:mixture_model.weights.size + 1 + mixture_model.parameters.size]
         
@@ -190,7 +216,15 @@ def variable_projection_total_variation(
         sum_weights = np.sum(np.abs(weights))
         weights = np.abs(weights) / sum_weights
 
-        # update mixture model
-        mixture_model.weights = weights 
-        mixture_model.parameters = parameters.reshape(mixture_model.parameters.shape)
-    return mixture_model 
+        mixture_model.update(weights, parameters)
+        mixture_model.log()
+
+        old = mixture_model.history[-2]
+        new = mixture_model.history[-1]
+        error = np.linalg.norm(new.array - old.array)
+
+        if error < 1e-12:
+            print(error)
+            break
+
+    return mixture_model, signal
