@@ -9,18 +9,6 @@ from scipy.sparse import spdiags
 from scipy.optimize import fminbound
 
 
-# def normal_distribution(t, mean, standard_deviation): 
-#     gaussian = np.exp(-0.5 * ((t - mean) / standard_deviation)**2)
-#     return gaussian / sum(gaussian)
-
-# def derivative_wrt_mean(t, mean, standard_deviation):
-#     if mean == 0: 
-#         return np.zeros_like(t)
-#     return np.exp(-(t-mean) ** 2 / (2 * standard_deviation ** 2)) * ((t-mean) / (standard_deviation**2))
-
-# def derivative_wrt_standard_deviation(t, mean, standard_deviation): 
-#     return np.exp(-(t-mean)**2 / (2 * standard_deviation ** 2)) * ((t-mean)**2) / (standard_deviation**3)
-
 def toeplitz_structure(c, k): 
     n = c.size
     col = np.zeros_like(c)
@@ -64,9 +52,7 @@ class MixtureDistribution():
     
     @property
     def components_array(self): 
-        return np.array(
-            [component(parameter) for parameter, component in zip(self.parameters, self.components)]
-        )
+        return [component(parameter) for parameter, component in zip(self.parameters, self.components)]
 
     @property
     def component_derivatives_array(self): 
@@ -127,10 +113,7 @@ class MixtureDistribution():
         return f'''MixtureDistribution(
     domain = {[self.domain[0], self.domain[-1]]}, 
     weights = {self.weights},
-    parameters = {self.parameters},
-    components = {self.components},
-    component_derivatives = {self.component_derivatives}
-        )'''
+    parameters = {self.parameters}, ...)'''
 
 def total_variation(x): 
     BETA = 1e-16
@@ -168,7 +151,7 @@ def line_search(alpha, function, delta_y, mixture_model, blurring_operator):
     return function(blurring_operator)
 
 
-def variable_projection_total_variation(
+def variable_projection(
         data, 
         initial_signal,
         initial_mixture_model,
@@ -179,12 +162,12 @@ def variable_projection_total_variation(
         max_iterations
     ): 
     L = regularization_matrix(initial_signal)
-    mixture_model = initial_mixture_model
+    mixture_model = copy(initial_mixture_model)
     kernel_partial_derivatives = mixture_model.partial_derivatives
 
 
     y = mixture_model.ravel
-    for _ in range(max_iterations): 
+    for iteration in range(max_iterations): 
         # update blurring operator
         kernel = mixture_model.array
         K = BlurringOperator(kernel, blur_structure)
@@ -219,12 +202,12 @@ def variable_projection_total_variation(
         mixture_model.update(weights, parameters)
         mixture_model.log()
 
-        old = mixture_model.history[-2]
-        new = mixture_model.history[-1]
-        error = np.linalg.norm(new.array - old.array)
+        old_model = mixture_model.history[-2]
+        new_model = mixture_model.history[-1]
 
-        if error < 1e-12:
-            print(error)
+        kernel_residual = old_model.array - new_model.array
+
+        if np.linalg.norm(residual, 1) / residual.size < 1e-2:
             break
 
-    return mixture_model, signal
+    return mixture_model, signal, iteration + 1
