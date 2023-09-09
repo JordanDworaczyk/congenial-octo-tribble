@@ -30,11 +30,11 @@ class BlurringOperator():
     def __matmul__(self, other): 
         return self.matrix @ other
 
-class MixtureComponent(): 
+class KernelComponent(): 
     def __init__(self): 
         ...
 
-class Kernel(): 
+class KernelMixture(): 
     def __init__(
             self, 
             domain, 
