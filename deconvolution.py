@@ -44,7 +44,6 @@ class MixtureDistribution():
         self.parameters = mixture_component_parameters 
         self.components = [partial(component, domain) for component in mixture_components]
         self.component_derivatives = [partial(derivative, domain) for derivative in mixture_component_derivatives]
-        self.history = [copy(self)]
     
     @property
     def array(self): 
@@ -76,11 +75,8 @@ class MixtureDistribution():
         return result 
 
     @property
-    def ravel(self): 
-        return np.hstack((self.weights, self.parameters.flatten()))
-
     def flatten(self):
-        return 
+        return np.hstack((self.weights, self.parameters.flatten()))
 
     @property
     def partial_derivative_wrt_weights(self): 
@@ -89,15 +85,6 @@ class MixtureDistribution():
     @property 
     def partial_derivatives(self):
         return self.partial_derivative_wrt_weights + self.partial_derivative_wrt_parameters
-
-    def update(self, weights, parameters):
-        self.weights = weights 
-        self.parameters = parameters.reshape(self.parameters.shape) 
-
-    def log(self):
-        self.history.append(
-            copy(self)
-        )
 
     def visualize_mixture(self, title): 
         fig, ax = plt.subplots()
@@ -108,12 +95,6 @@ class MixtureDistribution():
         ax.set_ylabel('Density')
         ax.legend(fontsize=8)
         plt.title(title)
-    
-    def __repr__(self) -> str:
-        return f'''MixtureDistribution(
-    domain = {[self.domain[0], self.domain[-1]]}, 
-    weights = {self.weights},
-    parameters = {self.parameters}, ...)'''
 
 def total_variation(x): 
     BETA = 1e-16
@@ -166,11 +147,12 @@ def variable_projection(
     kernel_partial_derivatives = mixture_model.partial_derivatives
 
 
-    y = mixture_model.ravel
+    y = mixture_model.flatten
     for iteration in range(max_iterations): 
         # update blurring operator
-        kernel = mixture_model.array
-        K = BlurringOperator(kernel, blur_structure)
+        K = BlurringOperator(
+            kernel = mixture_model.array, 
+            structure=blur_structure)
 
         # reduce full functional
         KL = np.block([[K.matrix], [regularization_parameter * L]])
@@ -200,12 +182,6 @@ def variable_projection(
         weights = np.abs(weights) / sum_weights
 
         mixture_model.update(weights, parameters)
-        mixture_model.log()
-
-        old_model = mixture_model.history[-2]
-        new_model = mixture_model.history[-1]
-
-        kernel_residual = old_model.array - new_model.array
 
         if np.linalg.norm(residual, 1) / residual.size < 1e-2:
             break
