@@ -30,7 +30,11 @@ class BlurringOperator():
     def __matmul__(self, other): 
         return self.matrix @ other
 
-class MixtureDistribution(): 
+class MixtureComponent(): 
+    def __init__(self): 
+        ...
+
+class Kernel(): 
     def __init__(
             self, 
             domain, 
@@ -95,6 +99,10 @@ class MixtureDistribution():
         ax.set_ylabel('Density')
         ax.legend(fontsize=8)
         plt.title(title)
+
+    def update(self, weights, parameters):
+        self.weights = weights 
+        self.parameters = parameters.reshape(self.parameters.shape) 
 
 def total_variation(x): 
     BETA = 1e-16
