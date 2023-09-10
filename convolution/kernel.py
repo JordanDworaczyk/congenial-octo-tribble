@@ -28,8 +28,6 @@ class Gaussian():
     
     @property 
     def derivative_wrt_mean(self): 
-        if self.mean == 0: 
-            return np.zeros_like(self.domain)
         return gaussian_derivative_wrt_b(self.domain, *self.parameter)
     
     @property
