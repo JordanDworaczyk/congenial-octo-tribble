@@ -1,13 +1,23 @@
 from functools import partial
 from copy import copy 
+from typing import Callable
 
 import numpy as np 
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 
 from scipy.linalg import toeplitz, pinv
 from scipy.sparse import spdiags
 from scipy.optimize import fminbound
 
+
+def equispaced_points(number_of_points):
+    """Returns an equally spaced array centered about zero
+    with `number_of_points + 1` points."""
+    return np.arange(
+        -number_of_points // 2,
+        number_of_points // 2 + 1,
+        dtype=float)
 
 def toeplitz_structure(c, k): 
     n = c.size
@@ -16,7 +26,6 @@ def toeplitz_structure(c, k):
     col[0:k+1] = c[k::1]
     row[0:k+1] = c[k::-1]
     return toeplitz(col, row)
-    
 
 class BlurringOperator(): 
     def __init__(self, kernel, structure):
@@ -30,11 +39,18 @@ class BlurringOperator():
     def __matmul__(self, other): 
         return self.matrix @ other
 
-class KernelComponent(): 
-    def __init__(self): 
-        ...
+class Kernel(): 
+    def __init__(self, 
+                 domain: npt.NDArray, 
+                 parameters: list, 
+                 function: Callable, 
+                 derivatives: list[Callable]): 
+        self.domain: npt.NDArray = domain 
+        self.parameter: list = parameters 
+        self.function: Callable = function 
+        self.derivative: dict[Callable] = derivatives
 
-class KernelMixture(): 
+class Mixture(): 
     def __init__(
             self, 
             domain, 
