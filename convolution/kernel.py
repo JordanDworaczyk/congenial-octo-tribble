@@ -3,7 +3,6 @@ import numpy.typing as npt
 
 from functools import reduce
 
-sum = np.sum 
 
 class Gaussian(): 
 
@@ -16,7 +15,8 @@ class Gaussian():
 
     @property
     def normalization_constant(self):
-        return 1 / sum(gaussian(self.domain, a=1, b=self.mean, c=self.std))
+        return 1 / np.sum(
+            gaussian(self.domain, a=1, b=self.mean, c=self.std))
 
     @property
     def parameter(self): 
@@ -74,11 +74,24 @@ class Mixture():
     
     @property 
     def derivative_wrt_weights(self): 
-        ...
+        return [kernel.image for kernel in self.components]
 
     @property 
     def derivative_wrt_components(self): 
-        ... 
+        def differentiation(w1, f, fprime, c):
+            sum_fprime = np.sum(fprime)
+            return w1 * (fprime - f * sum_fprime * c)
+        
+        result = []
+        for weight, kernel in zip(self.weights, self.components):
+            for derivative in kernel.partial_derivatives:
+                result.append(
+                    differentiation(
+                        w1=weight, 
+                        f=kernel.image, 
+                        fprime=derivative, 
+                        c=kernel.normalization_constant))
+        return result
 
     @property 
     def partial_derivatives(self): 
