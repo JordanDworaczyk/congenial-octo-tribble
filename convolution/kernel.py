@@ -1,10 +1,16 @@
-import numpy as np 
-import numpy.typing as npt
-
+"""
+This module provides kernels for convolution.
+"""
 from functools import reduce
+
+import numpy as np
+import numpy.typing as npt
 
 
 class Gaussian(): 
+    """
+    A gaussian kernel.
+    """
 
     def __init__(self, domain, standard_deviation, mean=None): 
         if standard_deviation == 0: 
@@ -15,19 +21,33 @@ class Gaussian():
 
     @property
     def normalization_constant(self):
+        "Returns constant which normalizes gaussian kernel."
         return 1 / np.sum(
             gaussian(self.domain, a=1, b=self.mean, c=self.std))
 
     @property
     def parameter(self): 
+        "Returns parameters of gaussian kernel."
         return self.normalization_constant, self.mean, self.std
 
     @property 
     def image(self):
+        """Returns the image of the gaussian kernel. 
+        
+        The set of all output values that the gaussian 
+        produces over its domain.
+        """
         return gaussian(self.domain, *self.parameter)
     
     @property 
     def derivative_wrt_mean(self): 
+        """The partial derivative w.r.t mean.
+
+        The partial derivative of the gaussian with respect 
+        to the mean. Evaulated at the parameter `self.mean`.
+        If `self.mean` is none then the derivative 
+        is also none. 
+        """
         if self.mean is not None:
             t = self.domain
             a, b, c = self.parameter
@@ -35,10 +55,22 @@ class Gaussian():
     
     @property
     def derivative_wrt_std(self): 
+        """The partial derivative w.r.t standard deviation.
+
+        The partial derivative with respect to the standard 
+        deviation. Evaulated at the parameter `self.std`. 
+        """
         return gaussian_derivative_wrt_c(self.domain, *self.parameter)
     
     @property
     def partial_derivatives(self): 
+        """Returns list of partial derivatives.
+
+        The list consists of both partial derivatives 
+        if the gaussian kernel is given a mean. Otherwise, 
+        returns a list of the partial derivative w.r.t. 
+        the standard deviation. 
+        """
         if self.mean is not None: 
             return [self.derivative_wrt_mean, self.derivative_wrt_std]
         return [self.derivative_wrt_std]
