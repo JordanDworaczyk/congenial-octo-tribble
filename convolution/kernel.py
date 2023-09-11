@@ -6,7 +6,7 @@ from functools import reduce
 
 class Gaussian(): 
 
-    def __init__(self, domain, mean, standard_deviation): 
+    def __init__(self, domain, standard_deviation, mean=None): 
         if standard_deviation == 0: 
             raise ZeroDivisionError('Standard deviation must not be zero.')
         self.domain = domain
@@ -28,7 +28,10 @@ class Gaussian():
     
     @property 
     def derivative_wrt_mean(self): 
-        return gaussian_derivative_wrt_b(self.domain, *self.parameter)
+        if self.mean:
+            t = self.domain
+            a, b, c = self.parameter
+            return a * np.exp(-0.5 * ((t - b) / c)**2 ) 
     
     @property
     def derivative_wrt_std(self): 
@@ -36,7 +39,9 @@ class Gaussian():
     
     @property
     def partial_derivatives(self): 
-        return [self.derivative_wrt_mean, self.derivative_wrt_std]
+        if self.mean: 
+            return [self.derivative_wrt_mean, self.derivative_wrt_std]
+        return [self.derivative_wrt_std]
     
 
 def gaussian(domain: npt.NDArray, a: float, b: float, c: float) -> npt.NDArray: 
