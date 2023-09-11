@@ -28,7 +28,7 @@ class Gaussian():
     
     @property 
     def derivative_wrt_mean(self): 
-        if self.mean:
+        if self.mean is not None:
             t = self.domain
             a, b, c = self.parameter
             return a * np.exp(-0.5 * ((t - b) / c)**2 ) 
@@ -39,7 +39,7 @@ class Gaussian():
     
     @property
     def partial_derivatives(self): 
-        if self.mean: 
+        if self.mean is not None: 
             return [self.derivative_wrt_mean, self.derivative_wrt_std]
         return [self.derivative_wrt_std]
     
