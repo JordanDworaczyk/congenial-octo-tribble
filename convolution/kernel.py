@@ -13,6 +13,8 @@ class Gaussian():
     """
 
     def __init__(self, domain, standard_deviation, mean=None): 
+        if standard_deviation == 0: 
+            raise ZeroDivisionError('Standard deviation must not be zero.') 
         self.domain = domain
         self._mean = mean 
         self._std = standard_deviation
