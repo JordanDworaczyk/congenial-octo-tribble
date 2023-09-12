@@ -13,11 +13,34 @@ class Gaussian():
     """
 
     def __init__(self, domain, standard_deviation, mean=None): 
-        if standard_deviation == 0: 
-            raise ZeroDivisionError('Standard deviation must not be zero.')
         self.domain = domain
-        self.mean = mean 
-        self.std = standard_deviation
+        self._mean = mean 
+        self._std = standard_deviation
+
+    @property 
+    def std(self): 
+        return self._std 
+    
+    @std.setter 
+    def std(self, value): 
+        if value == 0: 
+            raise ZeroDivisionError('Standard deviation must not be zero.') 
+        self._std = value 
+
+    @property 
+    def mean(self): 
+        if self._mean is not None: 
+            return self._mean
+        return 0 
+
+    @mean.setter
+    def mean(self, value): 
+        if  self._mean is None:
+            raise Exception('This instance has no mean.')
+        self._mean = value 
+        
+        
+   
 
     @property
     def normalization_constant(self):
@@ -28,9 +51,9 @@ class Gaussian():
         """
         t = self.domain
         a = 1 
-        b = self.mean
-        c = self.std
-        return 1 / np.sum(a * np.exp(-0.5 * ((t - b) / c)**2 ))
+        b = self.mean 
+        c = self.std 
+        return 1 / np.sum(a * np.exp(-0.5 * ((t - b) / c)**2))
 
     @property
     def parameter(self): 
