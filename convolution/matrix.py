@@ -24,13 +24,12 @@ class Operator():
     @property
     def partial_derivatives(self): 
         result = list()
-        for derivatives in self.kernel.partial_derivatives: 
-            for derivative in derivatives: 
-                result.append(
-                    self.structure(
-                        derivative, 
-                        derivative.size // 2
-                    )
+        for derivative in self.kernel.partial_derivatives: 
+            result.append(
+                self.structure(
+                    derivative, 
+                    derivative.size // 2
                 )
+            )
         return result
 

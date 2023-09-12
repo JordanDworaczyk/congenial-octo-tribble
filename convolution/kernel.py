@@ -2,6 +2,7 @@
 This module provides kernels for convolution.
 """
 from functools import reduce
+import itertools
 
 import numpy as np
 import numpy.typing as npt
@@ -16,8 +17,8 @@ class Gaussian():
         if standard_deviation == 0: 
             raise ZeroDivisionError('Standard deviation must not be zero.') 
         self.domain = domain
-        self._mean = mean 
         self._std = standard_deviation
+        self._mean = mean 
 
     @property 
     def std(self): 
@@ -41,9 +42,6 @@ class Gaussian():
             raise Exception('This instance has no mean.')
         self._mean = value 
         
-        
-   
-
     @property
     def normalization_constant(self):
         """Returns constant which normalizes gaussian kernel.
@@ -82,10 +80,11 @@ class Gaussian():
         If `self.mean` is none then the derivative 
         is also none. 
         """
-        if self.mean is not None:
-            t = self.domain
+        t = self.domain
+        if self._mean is not None:
             a, b, c = self.parameter
             return a * (t - b) * np.exp(-0.5*((t - b) / c)**2) / c**2
+        return np.zeros_like(t)
     
     @property
     def derivative_wrt_std(self): 
@@ -107,9 +106,13 @@ class Gaussian():
         returns a list of the partial derivative w.r.t. 
         the standard deviation. 
         """
-        if self.mean is not None: 
-            return [self.derivative_wrt_mean, self.derivative_wrt_std]
+        if self._mean is not None: 
+            return [self.derivative_wrt_std, self.derivative_wrt_mean, ]
         return [self.derivative_wrt_std]
+    
+    @property
+    def __name__(self): 
+        return 'Gaussian'
     
 
 class Mixture():
@@ -179,4 +182,5 @@ class Mixture():
         Returns a list of the partial derivatives of the 
         kernel mixture. 
         """
-        return [self.derivative_wrt_weights, self.derivative_wrt_components]
+        derivatives = [self.derivative_wrt_weights, self.derivative_wrt_components]
+        return list(itertools.chain.from_iterable(derivatives))
