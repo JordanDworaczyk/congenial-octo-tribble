@@ -7,6 +7,9 @@ import itertools
 import numpy as np
 import numpy.typing as npt
 
+import logging
+
+# logging.basicConfig(filename='example.log', level=logging.DEBUG)
 
 class Gaussian(): 
     """
@@ -19,6 +22,22 @@ class Gaussian():
         self.domain = domain
         self._std = standard_deviation
         self._mean = mean 
+
+    @property
+    def variables(self): 
+        if self._mean is not None: 
+            return self.std, self.mean 
+        return [self.std]
+    
+    @variables.setter
+    def variables(self, values): 
+        if not len(self.variables) == len(values): 
+            raise Exception(f'{values}')
+        if self._mean is not None: 
+            self.std = values[0] 
+            self.mean = values[1]
+        # logging.debug(f'Setting mean')
+        self.std = values[0]
 
     @property 
     def std(self): 
@@ -78,7 +97,7 @@ class Gaussian():
         The partial derivative of the gaussian with respect 
         to the mean. Evaulated at the parameter `self.mean`.
         If `self.mean` is none then the derivative 
-        is also none. 
+        is zero.  
         """
         t = self.domain
         if self._mean is not None:
@@ -107,7 +126,7 @@ class Gaussian():
         the standard deviation. 
         """
         if self._mean is not None: 
-            return [self.derivative_wrt_std, self.derivative_wrt_mean, ]
+            return [self.derivative_wrt_std, self.derivative_wrt_mean]
         return [self.derivative_wrt_std]
     
     @property
@@ -118,8 +137,27 @@ class Gaussian():
 class Mixture():
     "Kernel that consists of a mixture of kernels."
     def __init__(self, weights, kernels): 
-        self.weights = weights
+        self.weights = tuple(weights)
         self.components = kernels
+
+    @property
+    def variables(self): 
+        return tuple(
+            itertools.chain.from_iterable(
+                [self.weights] + [kernel.variables for kernel in self.components] 
+            )
+        )
+
+    @variables.setter
+    def variables(self, values): 
+        if not len(values) == len(self.variables): 
+            raise Exception
+        n = len(self.weights)
+        self.weights = values[0:n]
+        for kernel in self.components: 
+            m = len(kernel.variables)
+            kernel.variables = values[n:n + m]
+            n = m + n
 
     @property 
     def domain(self): 
