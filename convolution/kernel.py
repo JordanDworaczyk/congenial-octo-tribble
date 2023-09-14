@@ -206,7 +206,7 @@ class Mixture():
         mixture with respect to the weights. The 
         weights are assumed to be constant. Therefore 
         the derivative is simply the corresponding 
-        components of the mixture. 
+        components of the mixture.
         """
         return [kernel.image for kernel in self.components]
 
