@@ -204,7 +204,7 @@ class Mixture():
         
         The partial derivatives of the kernel 
         mixture with respect to the weights. The 
-        weights are assumed to be constant. Therfore 
+        weights are assumed to be constant. Therefore 
         the derivative is simply the corresponding 
         components of the mixture. 
         """
@@ -218,10 +218,6 @@ class Mixture():
         each component with respect to each of the 
         components parameters. 
         """
-        def differentiation(w, f, fprime, c):
-            sum_fprime = np.sum(fprime)
-            return w * (fprime - f * sum_fprime * c)
-        
         result = []
         for weight, kernel in zip(self.weights, self.components):
             for derivative in kernel.partial_derivatives:
