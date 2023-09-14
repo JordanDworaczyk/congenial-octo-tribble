@@ -99,10 +99,16 @@ class Gaussian():
         If `self.mean` is none then the derivative 
         is zero.  
         """
+        # TODO: FIX ME
+        def differentiation(f, fprime, c):
+            sum_fprime = np.sum(fprime)
+            return c * fprime - f * sum_fprime * c**2
         t = self.domain
         if self._mean is not None:
             a, b, c = self.parameter
-            return a * (t - b) * np.exp(-0.5*((t - b) / c)**2) / c**2
+            f = np.exp(-0.5*((t - b) / c)**2)
+            fprime = (t - b) * f / c**2
+            return differentiation(f, fprime, a)
         return np.zeros_like(t)
     
     @property
@@ -112,9 +118,15 @@ class Gaussian():
         The partial derivative with respect to the standard 
         deviation. Evaulated at the parameter `self.std`. 
         """
+        # TODO: FIX ME 
+        def differentiation(f, fprime, c):
+            sum_fprime = np.sum(fprime)
+            return c * fprime - f * sum_fprime * c**2
         t = self.domain 
         a, b, c = self.parameter
-        return a * (t - b)**2 * np.exp(-0.5*((t - b) / c)**2) / c**3 
+        f = np.exp(-0.5*((t - b) / c)**2)
+        fprime = (t - b)**2 * f / c**3 
+        return differentiation(f, fprime, a)
     
     @property
     def partial_derivatives(self): 
@@ -137,8 +149,16 @@ class Gaussian():
 class Mixture():
     "Kernel that consists of a mixture of kernels."
     def __init__(self, weights, kernels): 
-        self.weights = tuple(weights)
+        self._weights = np.abs(weights) / np.sum(weights)
         self.components = kernels
+
+    @property 
+    def weights(self): 
+        return self._weights 
+    
+    @weights.setter
+    def weights(self, value): 
+        self._weights = np.abs(value) / np.sum(np.abs(value))
 
     @property
     def variables(self): 
@@ -198,19 +218,14 @@ class Mixture():
         each component with respect to each of the 
         components parameters. 
         """
-        def differentiation(w1, f, fprime, c):
+        def differentiation(w, f, fprime, c):
             sum_fprime = np.sum(fprime)
-            return w1 * (fprime - f * sum_fprime * c)
+            return w * (fprime - f * sum_fprime * c)
         
         result = []
         for weight, kernel in zip(self.weights, self.components):
             for derivative in kernel.partial_derivatives:
-                result.append(
-                    differentiation(
-                        w1=weight, 
-                        f=kernel.image, 
-                        fprime=derivative, 
-                        c=kernel.normalization_constant))
+                result.append(weight * derivative)
         return result
 
     @property 
