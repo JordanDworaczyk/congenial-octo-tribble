@@ -3,9 +3,20 @@ from copy import deepcopy
 
 import numpy as np 
 from scipy.linalg import pinv
+from scipy.sparse import spdiags
 from scipy.optimize import fminbound
 
 SMALL = 1e-16
+
+
+def total_variation(x): 
+    BETA = 1e-16
+    D = forward_difference_matrix(x)
+    return np.diag((1/(((D @ x)**2 + BETA**2)**(1/4)))) @ D
+
+
+def forward_difference_matrix(data): 
+    return spdiags([-np.ones_like(data), np.ones_like(data)], [0, 1], data.size, data.size).toarray()
 
 def variable_projection(
     data, 
