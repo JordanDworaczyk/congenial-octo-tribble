@@ -29,6 +29,7 @@ def variable_projection(
     change=1e-16
 
 ):
+    history = list()
     def full_functional(y, x, d, L, alpha): 
         K.kernel.variables = y # CAUTION: State state of `K.kernel.variables`
         return np.linalg.norm(K.image @ x - d)**2 + alpha**2 * np.linalg.norm(L @ x)**2
@@ -74,4 +75,5 @@ def variable_projection(
         mean_squared_error = np.linalg.norm(old_kernel - K.kernel.image)**2 / data.size
         if  mean_squared_error < change:
             break 
-    return K, x, iteration, mean_squared_error
+        history.append((deepcopy(K), x, iteration, mean_squared_error))
+    return K, x, iteration, mean_squared_error, history
