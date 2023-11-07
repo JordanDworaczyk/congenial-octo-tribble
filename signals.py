@@ -11,3 +11,7 @@ def rectangle(domain):
 
 def heavside(domain):
     return np.heaviside(domain, 1)
+
+# TODO
+def smooth():
+    pass 
